@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: valkey
+spec:
+  serviceName: valkey-headless
+  replicas: 6
+  selector:
+    matchLabels:
+      app: valkey
+  template:
+    metadata:
+      labels:
+        app: valkey
+    spec:
+      containers:
+        - name: valkey
+          image: valkey/valkey:latest
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - name: valkey-config
+              mountPath: /etc/valkey/
+            - name: valkey-data
+              mountPath: /data
+          command:
+            - "valkey-server"
+            - "/etc/valkey/valkey.conf"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+          livenessProbe:
+            tcpSocket:
+              port: 6379
+            initialDelaySeconds: 30
+            periodSeconds: 5
+      volumes:
+        - name: valkey-config
+          configMap:
+            name: valkey-config
+  volumeClaimTemplates:  # Added PVC configuration
+    - metadata:
+        name: valkey-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+          
+    
